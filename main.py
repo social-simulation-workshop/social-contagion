@@ -66,8 +66,6 @@ class simulate:
             agent_B.R[b1][b2] += 1
             agent_B.R[b2][b1] += 1
             
-            # R decays
-            agent_B.R *= decay_rate
 
             # update V and decide whether to retain or not
             ori_cs = agent_B.calculate_CS()
@@ -85,6 +83,9 @@ class simulate:
                 agent_B.update_P()
             else:
                 agent_B.V[weaker] -= delta_v
+            
+            # R decays
+            agent_B.R *= decay_rate
 
             if time % 1000 == 0:
                 self.plotter.plot_map(self.map, time)
