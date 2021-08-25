@@ -1,4 +1,5 @@
 import argparse
+from matplotlib.pyplot import plot
 import numpy as  np
 import random
 from plot import Plot2DArray
@@ -48,6 +49,10 @@ class simulate:
             self.agents.append(agent)
             self.map.append(agent.V)
         self.plotter = Plot2DArray() # visual
+        self.plot_image0 = [[],[]]
+        self.plot_image1 = [[],[]]
+        self.plot_image2 = [[],[]]
+        self.plot_image3 = [[],[]]
 
     def act(self,agent):
         # P(i) = e^(V_i) / ( sigma(j in K)  e^(v_j) )
@@ -63,7 +68,7 @@ class simulate:
         ans = 0
         for i in range(N):
             for j in range(i+1,N):
-                r = np.corrcoef(self.agents[i],self.agents[j])
+                r = np.corrcoef(self.agents[i].V,self.agents[j].V)
                 ans += r[0,1]
         ans *= 2/(N*(N-1))
         return ans
@@ -72,11 +77,50 @@ class simulate:
         ans = 0
         for i in range(N):
             for j in range(i+1,N):
-                r = np.corrcoef(self.agents[i],self.agents[j])
+                r = np.corrcoef(self.agents[i].V,self.agents[j].V)
                 ans += abs(r[0,1])
         ans *= 2/(N*(N-1))
         return ans
 
+    def measurement(self):
+        # measurement
+        ### cognitive agreement
+        ##### interpretative distance
+        group_dis = 0
+        for agent_i in self.agents:
+            for agent_j in self.agents: # for any agent pair calculate their dis
+                dis = 0
+                for k in range(K):
+                    for l in range(K):
+                        dis += abs(
+                            agent_i.R[k][l] / np.max(agent_i.R)
+                            - agent_j.R[k][l] / np.max(agent_j.R)
+                        ) # 感覺可以讓每一個agent 已經事先除好max的 R (就不需要一直做那個除法)
+                group_dis += dis/(K**2)
+        group_dis /= (N**2) # interpretative distance at the group level
+        
+        ### behavioral agreement
+        ##### mutual information
+        I = 0   # mutual information
+        for x in range(K):
+            p_x = 0 # P(b1 = x)
+            for agent in self.agents:
+                p_x += agent.P[x]
+            p_x /= N
+            for y in range(K):
+                if y == x:  # P(b1 = x, b2 = x) = 0 given condition
+                    continue
+                p_y = 0 # P(b2 = y)
+                p_x_y = 0 # P(b1 = x, b2 = y)
+                for agent in self.agents:
+                    for j in range(K):  # enumerate X(b1) (using variable j) to get the marginal probability of y
+                        if j == y: continue
+                        p_y +=  agent.P[j] * agent.P[y]/( 1 - agent.P[j])
+                    p_x_y += agent.P[x]*agent.P[y]/(1-agent.P[x])
+                p_y /= N
+                p_x_y /= N
+                I += p_x_y*np.log2(p_x_y/p_x/p_y)
+        return (group_dis,I)
     def run(self):
         for time in range(self.times):
             # chose two people
@@ -105,60 +149,35 @@ class simulate:
                 agent_B.update_P()
             else:
                 agent_B.V[weaker] -= delta_v
-            
-            # R decays
-            agent_B.R *= decay_rate
-            '''
-            # measurement
-            ### cognitive agreement
-            ##### interpretative distance
-            group_dis = 0
-            for i in range(N):
-                for j in range(N):
-                    dis = 0
-                    for k in range(K):
-                        for l in range(K):
-                            dis += abs(self.agents[i].R[k][l]/np.max(self.agents[i].R) - self.agents[j].R[k][l]/np.max(self.agents[j].R))
-                    dis /= (K**2)
-                    group_dis += dis
-            group_dis /= (N**2) # interpretative distance at the group level
 
-            ### behavioral agreement
-            ##### mutual information
-            I = 0   # mutual information
-            for x in range(K):
-                p_x = 0 # P(b1 = x)
-                for i in range(N):
-                    p_x += self.agents[i].P[x]
-                p_x /= N
-                for y in range(K):
-                    if y == x:  # P(b1 = x, b2 = x) = 0 given condition
-                        continue
-                    p_y = 0 # P(b2 = y)
-                    p_x_y = 0 # P(b1 = x, b2 = y)
-                    for i in range(N):
-                        for j in range(K):  # enumerate X(b1) (using variable j) to get the marginal probability of y
-                            if j == y:
-                                continue
-                            p_y += self.agents[i].P[j]*self.agents[i].P[y]/(1-self.agents[i].P[j])
-
-                        p_x_y += self.agents[i].P[x]*self.agents[i].P[y]/(1-self.agents[i].P[x])
-                    p_y /= N
-                    p_x_y /= N
-                    I += p_x_y*np.log2(p_x_y/p_x/p_y)
-            '''
             # R decays
             agent_B.R *= decay_rate
 
-            if time%10000 == 0:
+            if time%1000 == 0:
                 total = 0
                 for agent in self.agents:
                     total += agent.calculate_CS()
                 total /= N
                 print(total)
+                (a,b) = self.measurement()
+                self.plot_image0[0].append(time)
+                self.plot_image0[1].append(a)
 
+                self.plot_image1[0].append(time)
+                self.plot_image1[1].append(b)
+
+                self.plot_image2[0].append(time)
+                self.plot_image2[1].append(self.Preference_Congruence())
+
+                self.plot_image3[0].append(time)
+                self.plot_image3[1].append(self.Preference_Similarity())
+                self.plotter.plot_img(self.plot_image3[0],self.plot_image3[1],time)
+                #print(self.measurement())
+                #print(self.Preference_Congruence(), self.Preference_Similarity())
+                
             if time %1000 == 0:
-                self.draw(time)
+                pass
+                #self.draw(time)
 
     def draw(self,time):    
         QQ = []

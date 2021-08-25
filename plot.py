@@ -17,6 +17,7 @@ class Plot2DArray:
 
         self.max_digit = 4
         self.plotted_img_paths = []
+    
     def plot_map(self, map, t, cmap="magma", figure_size=(9, 9)):
         """
         Param
@@ -39,6 +40,26 @@ class Plot2DArray:
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
 
+    def plot_img(self, x, y, t, color="ro", figure_size=(9, 9) ):
+        """
+        Param
+        - x,y: np.array
+            two 1d numpy array to plot
+        - t: float
+            current timestep t
+        - color:
+            the color of plot.
+        """
+        title = "t = {:.3f}".format(t)
+        output_path = os.path.join(os.getcwd(), self.output_dir, self.filename_prefix)
+        #filename = "{}_{:.3f}.png".format(self.filename_prefix, t)
+        filename = "{}_{:.3f}.png".format( self.filename_prefix, t)
+        plt.figure(figsize=figure_size, dpi=80)
+        plt.title(title)
+        plt.plot(x,y,color)
+        self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
+        plt.close()
+    
     def _save_fig(self, output_path, fn, t):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
