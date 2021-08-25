@@ -86,6 +86,46 @@ class simulate:
             
             # R decays
             agent_B.R *= decay_rate
+            
+            # measurement
+            ### cognitive agreement
+            ##### interpretative distance
+            standarized_R = self.R/np.max(self.R)
+            group_dis = 0
+            for i in range(N):
+                for j in range(N):
+                    dis = 0
+                    for k in range(K):
+                        for l in range(K):
+                            dis += abs(self.agents[i].R[k][l] - self.agents[j].R[k][l])
+                    dis /= (K**2)
+                    group_dis += dis
+            group_dis /= (N**2) # interpretative distance at the group level
+
+
+            ### behavioral agreement
+            ##### mutual information
+            I = 0
+            for x in range(K):
+                p_x = 0
+                for i in range(N):
+                    p_x += agents[i].P[x]
+                p_x /= N
+                for y in range(K):
+                    if y == x:
+                        continue
+                    p_y = 0
+                    p_x_y = 0
+                    for i in range(N):
+                        for j in range(K):
+                            if j == y:
+                                continue
+                            p_y += agents[i].P[j]*agents[i].P[y]/(1-agents[i].P[j])
+
+                        p_x_y += agents[i].P[x]*agents[i].P[y]/(1-agents[i].P[x])
+                    p_y /= N
+                    p_x_y /= N
+                    I += p_x_y*np.log2(p_x_y/p_x/p_y)
 
             if time % 1000 == 0:
                 self.plotter.plot_map(self.map, time)
