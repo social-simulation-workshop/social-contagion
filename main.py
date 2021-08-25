@@ -5,8 +5,9 @@ from plot import Plot2DArray
 import os
 # init
 K = 6 # the number of cultural practices
-N = 100 # the number of agents
+N = 50 # the number of agents
 decay_rate = 0.9 # the decay rate of mattrix R
+np.random.seed(34)
 
 class Agent:
     def __init__(self):
@@ -34,19 +35,19 @@ class Agent:
         for i in range(K):
             for j in range(K):
                 cs += abs(standarized_R[i][j]-Omega[i][j])
-        cs *= K/(K*(K-1))
+        cs *= 1/(K*(K-1))
         return cs
 
 class simulate:
     def __init__(self):
         self.agents = []
         self.map = []
-        self.times = 100000 # times of iterations
+        self.times = 100001 # times of iterations
         for _ in range(N):
-            self.agents.append(Agent())
-        self.plotter = Plot2DArray() # visual
-        for agent in self.agents:
+            agent = Agent()
+            self.agents.append(agent)
             self.map.append(agent.V)
+        self.plotter = Plot2DArray() # visual
 
     def act(self,agent):
         # P(i) = e^(V_i) / ( sigma(j in K)  e^(v_j) )
@@ -58,6 +59,24 @@ class simulate:
 
         return b1, b2
     
+    def Preference_Similarity(self):
+        ans = 0
+        for i in range(N):
+            for j in range(i+1,N):
+                r = np.corrcoef(self.agents[i],self.agents[j])
+                ans += r[0,1]
+        ans *= 2/(N*(N-1))
+        return ans
+
+    def Preference_Congruence(self):
+        ans = 0
+        for i in range(N):
+            for j in range(i+1,N):
+                r = np.corrcoef(self.agents[i],self.agents[j])
+                ans += abs(r[0,1])
+        ans *= 2/(N*(N-1))
+        return ans
+
     def run(self):
         for time in range(self.times):
             # chose two people
@@ -70,10 +89,9 @@ class simulate:
             agent_B.R[b1][b2] += 1
             agent_B.R[b2][b1] += 1
             
-
             # update V and decide whether to retain or not
             ori_cs = agent_B.calculate_CS()
-            delta_v = np.random.normal(1)
+            delta_v = np.random.normal(size=1)
             
             mean = np.mean(agent_B.V)
             if abs(agent_B.V[b1]-mean) <= abs(agent_B.V[b2]-mean):
@@ -90,7 +108,7 @@ class simulate:
             
             # R decays
             agent_B.R *= decay_rate
-            
+            '''
             # measurement
             ### cognitive agreement
             ##### interpretative distance
@@ -104,7 +122,6 @@ class simulate:
                     dis /= (K**2)
                     group_dis += dis
             group_dis /= (N**2) # interpretative distance at the group level
-
 
             ### behavioral agreement
             ##### mutual information
@@ -129,13 +146,43 @@ class simulate:
                     p_y /= N
                     p_x_y /= N
                     I += p_x_y*np.log2(p_x_y/p_x/p_y)
+            '''
+            # R decays
+            agent_B.R *= decay_rate
 
-            if time % 1000 == 0:
-                self.plotter.plot_map(self.map, time)
+            if time%10000 == 0:
+                total = 0
+                for agent in self.agents:
+                    total += agent.calculate_CS()
+                total /= N
+                print(total)
+
+            if time %1000 == 0:
+                self.draw(time)
+
+    def draw(self,time):    
+        QQ = []
+        now = 0
+        QQ.append(self.map[now])
+        last = [ i for i in range(1,N) ]
+        for __ in range(N-1):
+            counting = np.zeros(N)
+            for _ in range(100):
+                act1,act2 = self.act(self.agents[now])
+                for k in last:
+                    counting[k] += 1
+                    if (act1,act2) == self.act(self.agents[k]):
+                        counting[k] += 1 
+            most_sim = np.argmax(counting)
+            now = most_sim
+            QQ.append(self.map[now])
+            last.remove(now)
+        self.plotter.plot_map( QQ, time)
+
 
 if __name__ == "__main__":
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
     demo = simulate()
     demo.run()
-    demo.plotter.save_gif()
+    demo.plotter.save_gif(fps=100)
     demo.plotter.save_mp4()
