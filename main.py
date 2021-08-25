@@ -51,7 +51,11 @@ class simulate:
     def act(self,agent):
         # P(i) = e^(V_i) / ( sigma(j in K)  e^(v_j) )
         #print(agent.P)
-        b1, b2 = np.random.choice(K, 2, p = agent.P)
+        b1 = 0
+        b2 = 0
+        while b1 == b2:
+            b1, b2 = np.random.choice(K, 2, p = agent.P)
+
         return b1, b2
     
     def run(self):
@@ -90,14 +94,13 @@ class simulate:
             # measurement
             ### cognitive agreement
             ##### interpretative distance
-            standarized_R = self.R/np.max(self.R)
             group_dis = 0
             for i in range(N):
                 for j in range(N):
                     dis = 0
                     for k in range(K):
                         for l in range(K):
-                            dis += abs(self.agents[i].R[k][l] - self.agents[j].R[k][l])
+                            dis += abs(self.agents[i].R[k][l]/np.max(self.agents[i].R) - self.agents[j].R[k][l]/np.max(self.agents[j].R))
                     dis /= (K**2)
                     group_dis += dis
             group_dis /= (N**2) # interpretative distance at the group level
@@ -105,24 +108,24 @@ class simulate:
 
             ### behavioral agreement
             ##### mutual information
-            I = 0
+            I = 0   # mutual information
             for x in range(K):
-                p_x = 0
+                p_x = 0 # P(b1 = x)
                 for i in range(N):
-                    p_x += agents[i].P[x]
+                    p_x += self.agents[i].P[x]
                 p_x /= N
                 for y in range(K):
-                    if y == x:
+                    if y == x:  # P(b1 = x, b2 = x) = 0 given condition
                         continue
-                    p_y = 0
-                    p_x_y = 0
+                    p_y = 0 # P(b2 = y)
+                    p_x_y = 0 # P(b1 = x, b2 = y)
                     for i in range(N):
-                        for j in range(K):
+                        for j in range(K):  # enumerate X(b1) (using variable j) to get the marginal probability of y
                             if j == y:
                                 continue
-                            p_y += agents[i].P[j]*agents[i].P[y]/(1-agents[i].P[j])
+                            p_y += self.agents[i].P[j]*self.agents[i].P[y]/(1-self.agents[i].P[j])
 
-                        p_x_y += agents[i].P[x]*agents[i].P[y]/(1-agents[i].P[x])
+                        p_x_y += self.agents[i].P[x]*self.agents[i].P[y]/(1-self.agents[i].P[x])
                     p_y /= N
                     p_x_y /= N
                     I += p_x_y*np.log2(p_x_y/p_x/p_y)
