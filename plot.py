@@ -56,7 +56,7 @@ class Plot2DArray:
         filename = "{}_{:.3f}.png".format( self.filename_prefix, t)
         plt.figure(figsize=figure_size, dpi=80)
         plt.title(title)
-        plt.plot(x,y,color)
+        plt.plot(x,y,linewidth=1)
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
     
@@ -101,11 +101,6 @@ class Plot2DArray:
 
 if __name__ == "__main__":
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
-    #plotter = Plot2DArray()
-    #plotter.save_gif(img_dir=img_dir)
-    #plotter.save_mp4(img_dir=img_dir)
-
-
     # usage example
     t = 60
     lots_of_data = np.random.randint(256, size=(t, 128, 6))
