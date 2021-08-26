@@ -5,20 +5,22 @@ import random
 from main import simulate
 from plot import Plot2DArray
 import os
-# init
-np.random.seed(34)
+
+np.random.seed(5)
 
 class two_agents_simulate(simulate):
     
     def __init__(self):    
         super().__init__( K=6, N=2, decay_rate = 0.9 )
-        self.init_corr = np.corrcoef(self.agents[0].V,self.agents[1].V) # 圖A的橫軸
+        # correlation at the begin
+        self.init_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1]
+        self.times = 1000
         self.plotter2 = Plot2DArray(filename_prefix = "absCorr and MI")
         self.plot_absCorr = [[],[]]
         self.plot_MI = [[],[]]
         
     def MI(self):
-        ##### mutual information
+        # calculate mutual information
         I = 0   # mutual information
         for x in range(self.K):
             p_x = 0 # P(b1 = x)
@@ -71,43 +73,48 @@ class two_agents_simulate(simulate):
             # R decays
             agent_B.R *= self.decay_rate
 
-            if time %1000 == 0:
-                self.draw(time)
-                # 圖b 橫軸是時間  縱軸分兩條線 
-                # 左邊座標軸 Absolute Correlation
-                # 右邊座標軸 Mutual Information -> 跟上面的 mutual information 的東西一樣
-                I = self.MI()   # 我把他自己弄了個func MI
-                abs_corr = abs(np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1])
-                self.plot_MI[0].append(time)
-                self.plot_MI[1].append(I)
-                self.plot_absCorr[0].append(time)
-                self.plot_absCorr[1].append(abs_corr)
-        ################
-        ############### 圖A 是等你跑完後 用 final_corr 對 init_corr 做圖
-        ################ 他說跑1000次 應該是1000個點的意思
-        final_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1] # 圖A的縱軸
+            # calculate and record the measurement
+            I = self.MI()
+            # Absolute Correlation at this time
+            abs_corr = abs(np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1])
+            self.plot_MI[0].append(time)
+            self.plot_MI[1].append(I)
+            self.plot_absCorr[0].append(time)
+            self.plot_absCorr[1].append(abs_corr)
+
+        # correlation at the end
+        final_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1]
         return (final_corr,self.init_corr)
 
 if __name__ == "__main__":
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
-    
+
+    plot_absCorr = [ np.zeros(1000), np.zeros(1000)]
+    plot_MI = [ np.zeros(1000), np.zeros(1000) ]
+
     plot_finalCorr_to_initCorr = [[],[]]
     for time in range(1000):
+        # simulate for 1000 times
+        #print(time)
         demo = two_agents_simulate()
         final_corr, init_corr =  demo.run()
+
         plot_finalCorr_to_initCorr[0].append(init_corr)
         plot_finalCorr_to_initCorr[1].append(final_corr)
-        if time == 0 :
-            demo.plotter2.plot_2line_img(
-                demo.plot_absCorr[0],
-                demo.plot_absCorr[1],
-                demo.plot_MI[0],
-                demo.plot_MI[1],
-                time
-            )
-            demo.plotter.save_gif(fps=100)
-            demo.plotter.save_mp4()
-    plotter = Plot2DArray(filename_prefix = "finalCorr_to_initCorr") # visual
-    plotter.plot_img(plot_finalCorr_to_initCorr[0], plot_finalCorr_to_initCorr[1], 1000)
+        plot_absCorr[0] += demo.plot_absCorr[0]
+        plot_absCorr[1] += demo.plot_absCorr[1]
+        plot_MI[0] += demo.plot_MI[0]
+        plot_MI[1] += demo.plot_MI[1]
     
+    # get the average of plot_absCorr and plot_MI
+    plot_absCorr[0] /= 1000
+    plot_absCorr[1] /= 1000
+    plot_MI[0] /= 1000
+    plot_MI[1] /= 1000
     
+    # draw two picture
+    plotter = Plot2DArray(filename_prefix = "finalCorr_to_initCorr")
+    plotter.plot_img(plot_finalCorr_to_initCorr[0], plot_finalCorr_to_initCorr[1], 1000,no_line=True)
+    
+    plotter2 = Plot2DArray(filename_prefix = "absCorr and MI")
+    plotter2.plot_2line_img( plot_absCorr[0], plot_absCorr[1], plot_MI[0], plot_MI[1], 1000)

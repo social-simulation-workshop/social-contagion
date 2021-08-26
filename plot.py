@@ -40,7 +40,7 @@ class Plot2DArray:
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
 
-    def plot_img(self, x, y, t, color="ro", figure_size=(9, 9) ):
+    def plot_img(self, x, y, t, color="ro", figure_size=(9, 9) , no_line = False):
         """
         Param
         - x,y: np.array
@@ -56,7 +56,10 @@ class Plot2DArray:
         filename = "{}_{:.3f}.png".format( self.filename_prefix, t)
         plt.figure(figsize=figure_size, dpi=80)
         plt.title(title)
-        plt.plot(x,y,linewidth=1)
+        
+        if no_line: plt.plot(x,y, color)
+        else: plt.plot(x,y,linewidth=1)
+        
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
     
