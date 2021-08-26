@@ -4,7 +4,7 @@ import random
 from plot import Plot2DArray
 import os
 
-np.random.seed(5)
+np.random.seed(6)
 
 class Agent:
     def __init__(self,K):
@@ -48,11 +48,11 @@ class Agent:
         return cs
 
 class simulate:
-    def __init__(self):
+    def __init__(self, K = 6, N = 30, decay_rate = 0.9):
         
-        self.K = 6  # a number, the size of the set of the culture practices
-        self.N = 30 # a number, the number of the agents
-        self.decay_rate = 0.9 # the decay rate of mattrix R
+        self.K = K  # a number, the size of the set of the culture practices
+        self.N = N # a number, the number of the agents
+        self.decay_rate = decay_rate # the decay rate of mattrix R
         self.times = 100001 # the number of iterations
         
         # agents : agent list (init with N agent)

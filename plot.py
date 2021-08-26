@@ -60,6 +60,27 @@ class Plot2DArray:
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
     
+    def plot_2line_img(self, x1, y1, x2, y2, t, color="ro", figure_size=(9, 9) ):
+        """
+        Param
+        - x,y: np.array
+            two 1d numpy array to plot
+        - t: float
+            current timestep t
+        - color:
+            the color of plot.
+        """
+        title = "t = {:.3f}".format(t)
+        output_path = os.path.join(os.getcwd(), self.output_dir, self.filename_prefix)
+        #filename = "{}_{:.3f}.png".format(self.filename_prefix, t)
+        filename = "{}_{:.3f}.png".format( self.filename_prefix, t)
+        plt.figure(figsize=figure_size, dpi=80)
+        plt.title(title)
+        plt.plot(x1,y1,linewidth=1)
+        plt.plot(x2,y2,linewidth=1)
+        self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
+        plt.close()
+
     def _save_fig(self, output_path, fn, t):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
