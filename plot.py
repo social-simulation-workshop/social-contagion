@@ -18,6 +18,7 @@ class Plot2DArray:
         self.max_digit = 4
         self.plotted_img_paths = []
     
+
     def plot_map(self, map, t, cmap="magma", figure_size=(9, 9)):
         """
         Param
@@ -39,6 +40,7 @@ class Plot2DArray:
         plt.colorbar()
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
+
 
     def plot_img(self, x, y, t, color="ro", figure_size=(9, 9) , no_line = False):
         """
@@ -63,6 +65,7 @@ class Plot2DArray:
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
     
+
     def plot_2line_img(self, x1, y1, x2, y2, t, color="ro", figure_size=(9, 9) ):
         """
         Param
@@ -84,6 +87,7 @@ class Plot2DArray:
         self.plotted_img_paths.append(self._save_fig(output_path, filename, t))
         plt.close()
 
+
     def _save_fig(self, output_path, fn, t):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
@@ -91,6 +95,7 @@ class Plot2DArray:
         plt.savefig(file_path)
         print("|t={}| figrue saved to {}".format((str(t)+' '*self.max_digit)[:self.max_digit], file_path))
         return file_path
+
 
     def save_gif(self, fps=30, img_dir=""):
         filename = "{}.gif".format(self.filename_prefix)
@@ -123,8 +128,10 @@ class Plot2DArray:
 
 
 
+
 if __name__ == "__main__":
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
+    
     # usage example
     t = 60
     lots_of_data = np.random.randint(256, size=(t, 128, 6))

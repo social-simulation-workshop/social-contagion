@@ -1,10 +1,10 @@
-from matplotlib.pyplot import plot
+# from matplotlib.pyplot import plot
 import numpy as  np
-import random
-from plot import Plot2DArray
 import os
+# import random
 
-np.random.seed(6)
+from plot import Plot2DArray
+
 
 class Agent:
     def __init__(self,K):
@@ -26,11 +26,13 @@ class Agent:
         self.P = np.empty( (1, self.K) ) 
         self.update_P() # use V to calculate the Probability
 
+
     def update_P(self):
         eV = np.exp(self.V) # eV[i] = e^(V[i])
         sum_ev = np.sum(eV) # 機率分母的部分
         self.P = eV/sum_ev
-        
+    
+
     def calculate_CS(self):
         # calculate the Constraint satisfaction
         Omega = np.zeros( (self.K, self.K) )
@@ -47,9 +49,9 @@ class Agent:
         cs *= 1/(self.K*(self.K-1))
         return cs
 
+
 class simulate:
     def __init__(self, K = 6, N = 30, decay_rate = 0.9):
-        
         self.K = K  # a number, the size of the set of the culture practices
         self.N = N # a number, the number of the agents
         self.decay_rate = decay_rate # the decay rate of mattrix R
@@ -60,6 +62,7 @@ class simulate:
         
         # init the obejects for plotting
         self.plot_init()
+
 
     def plot_init(self):
         tittle = [ "interpretative_distance","mutual_information","Preference_Similarity","Preference_Congruence"]
@@ -73,6 +76,7 @@ class simulate:
         self.plot_period = 200
         #self.expectation_cluster_w(100)
 
+
     def act(self,agent):
         # Pick two practice with the agent's preference
         # the probability formula:
@@ -82,6 +86,7 @@ class simulate:
             b1, b2 = np.random.choice(self.K, 2, p = agent.P)
         return b1, b2
     
+
     def Preference_Similarity(self,time):
         # measure the Preference_Similarity
         ans = 0
@@ -94,6 +99,7 @@ class simulate:
         self.plot_Preference_Similarity[0].append(time)
         self.plot_Preference_Similarity[1].append(ans)
 
+
     def Preference_Congruence(self,time):
         # measure the Preference_Congruence
         ans = 0
@@ -105,6 +111,7 @@ class simulate:
         # record the answer for the final plotting
         self.plot_Preference_Congruence[0].append(time)
         self.plot_Preference_Congruence[1].append(ans)
+
 
     def interpretative_distance(self,time):
         # measure the interpretative_distance
@@ -124,6 +131,7 @@ class simulate:
         self.plot_interpretative_distance[0].append(time)
         self.plot_interpretative_distance[1].append(group_dis)
     
+
     def mutual_information(self,time):
         # measure the mutual information
         I = 0
@@ -150,12 +158,14 @@ class simulate:
         self.plot_mutual_information[0].append(time)
         self.plot_mutual_information[1].append(I)
     
+
     def measurement(self,time):
         # call all the measurement
         self.Preference_Similarity(time)
         self.Preference_Congruence(time)
         self.interpretative_distance(time)
         self.mutual_information(time)
+
 
     def run(self):
         # the main function for simulation
@@ -234,6 +244,7 @@ class simulate:
             last.remove(now)
         self.plotter.plot_map( re_order, time)
 
+
     def k_means(self, k, points):
         '''
         the K-means algo for estimate the cluster
@@ -279,8 +290,8 @@ class simulate:
         
         return W_k
     
+
     def cluster_estimate(self,time):
-        
         data = [ self.agents[i].V for i in range(self.N) ]
         k_cluster = [0]*(self.K+1)
         for k in range(1,self.K+1):
@@ -304,6 +315,7 @@ class simulate:
         self.plot_cluster_estimate[0].append(time)
         self.plot_cluster_estimate[1].append(ans)
 
+
     def expectation_cluster_w(self, num):
         #print("start precalculate expectation_cluster_w")
         self.log_En = [ list() for _ in range(2*self.K+1) ]
@@ -322,7 +334,11 @@ class simulate:
             print(self.s_k[k])
         #print("Done.")
 
+
+
+
 if __name__ == "__main__":
+    np.random.seed(6)
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
     demo = simulate()
     demo.run()

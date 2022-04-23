@@ -1,24 +1,24 @@
-import argparse
-from matplotlib.pyplot import plot
+# import argparse
+# from matplotlib.pyplot import plot
 import numpy as  np
-import random
+# import random
 from main import simulate
 from plot import Plot2DArray
 import os
 
-np.random.seed(5)
 
 class two_agents_simulate(simulate):
     
     def __init__(self):    
-        super().__init__( K=6, N=2, decay_rate = 0.9 )
+        super().__init__(K=6, N=2, decay_rate = 0.9)
         # correlation at the begin
         self.init_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1]
         self.times = 1000
         self.plotter2 = Plot2DArray(filename_prefix = "absCorr and MI")
         self.plot_absCorr = [[],[]]
         self.plot_MI = [[],[]]
-        
+    
+
     def MI(self):
         # calculate mutual information
         I = 0   # mutual information
@@ -42,6 +42,7 @@ class two_agents_simulate(simulate):
                 I += p_x_y*np.log2(p_x_y/p_x/p_y)
         return I
     
+
     def run(self):
         for time in range(self.times):
             # the two people change their roles every time
@@ -86,7 +87,11 @@ class two_agents_simulate(simulate):
         final_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1]
         return (final_corr,self.init_corr)
 
+
+
+
 if __name__ == "__main__":
+    np.random.seed(5)
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
 
     plot_absCorr = [ np.zeros(1000), np.zeros(1000)]
