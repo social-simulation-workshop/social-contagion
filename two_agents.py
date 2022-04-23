@@ -1,10 +1,11 @@
 # import argparse
 # from matplotlib.pyplot import plot
-import numpy as  np
 # import random
+import numpy as  np
+import os
+
 from main import simulate
 from plot import Plot2DArray
-import os
 
 
 class two_agents_simulate(simulate):
@@ -92,6 +93,7 @@ class two_agents_simulate(simulate):
 
 if __name__ == "__main__":
     np.random.seed(5)
+    
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
 
     plot_absCorr = [ np.zeros(1000), np.zeros(1000)]
