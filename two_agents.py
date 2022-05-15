@@ -15,7 +15,7 @@ class two_agents_simulate(simulate):
         # correlation at the begin
         self.init_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1]
         self.times = 1000
-        self.plotter2 = Plot2DArray(filename_prefix = "absCorr and MI")
+        self.plotter2 = Plot2DArray(filename_prefix="absCorr and MI")
         self.plot_absCorr = [[],[]]
         self.plot_MI = [[],[]]
     
@@ -93,16 +93,16 @@ class two_agents_simulate(simulate):
 
 if __name__ == "__main__":
     np.random.seed(5)
-    
+
     img_dir = os.path.join(os.getcwd(), 'imgfiles')
 
-    plot_absCorr = [ np.zeros(1000), np.zeros(1000)]
-    plot_MI = [ np.zeros(1000), np.zeros(1000) ]
+    plot_absCorr = [np.zeros(1000), np.zeros(1000)]
+    plot_MI = [np.zeros(1000), np.zeros(1000)]
 
     plot_finalCorr_to_initCorr = [[],[]]
     for time in range(1000):
         # simulate for 1000 times
-        #print(time)
+        print(time)
         demo = two_agents_simulate()
         final_corr, init_corr =  demo.run()
 
@@ -120,8 +120,8 @@ if __name__ == "__main__":
     plot_MI[1] /= 1000
     
     # draw two picture
-    plotter = Plot2DArray(filename_prefix = "finalCorr_to_initCorr")
-    plotter.plot_img(plot_finalCorr_to_initCorr[0], plot_finalCorr_to_initCorr[1], 1000,no_line=True)
+    plotter = Plot2DArray(filename_prefix="finalCorr_to_initCorr")
+    plotter.plot_img(plot_finalCorr_to_initCorr[0], plot_finalCorr_to_initCorr[1], 1000, no_line=True)
     
-    plotter2 = Plot2DArray(filename_prefix = "absCorr and MI")
+    plotter2 = Plot2DArray(filename_prefix="absCorr and MI")
     plotter2.plot_2line_img( plot_absCorr[0], plot_absCorr[1], plot_MI[0], plot_MI[1], 1000)
