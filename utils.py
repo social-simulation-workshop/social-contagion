@@ -1,5 +1,6 @@
 import numpy as  np
 
+EPSILON = 10**-12
 
 class Agent:
     def __init__(self, K):
@@ -127,8 +128,8 @@ class Simulate:
                 for k in range(self.K):
                     for l in range(self.K): # distence between an agent pair's mattrix R
                         dis += abs(
-                            agent_i.R[k][l] / np.max(agent_i.R)
-                            - agent_j.R[k][l] / np.max(agent_j.R)
+                            agent_i.R[k][l] / (np.max(agent_i.R)+EPSILON)
+                            - agent_j.R[k][l] / (np.max(agent_i.R)+EPSILON)
                         )
                 group_dis += dis/(self.K**2) # Sum the distance
         group_dis /= (self.N**2) # interpretative distance at the group level
@@ -153,8 +154,8 @@ class Simulate:
                     # enumerate X(b1) (using variable j) to get the marginal probability of y
                     for j in range(self.K): 
                         if j == y: continue
-                        p_y +=  agent.P[j] * agent.P[y]/( 1 - agent.P[j])
-                    p_x_y += agent.P[x]*agent.P[y]/(1-agent.P[x])
+                        p_y +=  agent.P[j] * agent.P[y] / (1-agent.P[j])
+                    p_x_y += agent.P[x]*agent.P[y] / (1-agent.P[x])
                 p_y /= self.N
                 p_x_y /= self.N
                 I += p_x_y*np.log(p_x_y/p_x/p_y)

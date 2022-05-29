@@ -15,7 +15,7 @@ RNDSEED = 1026
 def run_simulation(log_data, rnd_seed):
     print("simulation {:4d} started".format(rnd_seed-RNDSEED+1))
     np.random.seed(rnd_seed)
-    demo = Simulate(times=N_TIME, log_measure_v=LOG_MEASURE_V, verbose=False)
+    demo = Simulate(decay_rate=0.95, times=N_TIME, log_measure_v=LOG_MEASURE_V, verbose=False)
     demo.run(log_verbose_n=LOG_VERBOSE_N)
 
     # log
