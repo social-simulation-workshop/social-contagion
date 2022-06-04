@@ -1,8 +1,9 @@
 import numpy as  np
-
-EPSILON = 10**-12
+import itertools
 
 class Agent:
+    _ids = itertools.count(0)
+
     def __init__(self, K):
         '''
         K : a number
@@ -14,12 +15,19 @@ class Agent:
         P : a Vector with length K
             agents' probability of exhibiting the K behaviors (according to the vector V )
         '''
+        self.id = next(self._ids)
         self.K = K
         self.R = np.ones((self.K, self.K))
         self.V = np.random.uniform(low=-1, high=1, size=self.K)
         self.P = np.empty(self.K)
-        self.update_P() 
+        self.update_P()
+    
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Agent):
+            raise NotImplementedError("Agent compared to non-Agent obejct.")
+        return self.id == other.id
+    
 
     def update_P(self):
         ''' Use V to update the probability of each practice performed. '''
@@ -41,13 +49,16 @@ class Agent:
             for j in range(self.K):
                 cs += abs(std_R[i][j]-omega[i][j])
         
-        # Jun: this formula is different from the report.
-        cs *= 1/(self.K*(self.K-1))
+        cs *= self.K / (self.K*(self.K-1))
         return cs
 
 
 class Simulate:
-    def __init__(self, K=6, N=30, decay_rate=0.8, times=100000, log_measure_v=1, verbose=True):
+    def __init__(self, K=6, N=30, decay_rate=0.8, times=100000,
+                 log_measure_v=1, verbose=True, rnd_seed=np.random.randint(10000)):
+        np.random.seed(rnd_seed)
+        self.rnd_seed = rnd_seed
+
         self.K = K  # a number, the size of the set of the culture practices
         self.N = N # a number, the number of the agents
         self.decay_rate = decay_rate # the decay rate of mattrix R
@@ -95,84 +106,116 @@ class Simulate:
             return np.array(self.rcd_mutual_information)
     
 
-    def record_preference_similarity(self):
+    def record_preference_similarity_congruence(self):
         # measure the preference_similarity
-        ans = 0
+        sim, con = 0, 0
+        
         for i in range(self.N):
             for j in range(i+1,self.N):
-                r = np.corrcoef(self.agents[i].V,self.agents[j].V)
-                ans += r[0,1]
-        ans *= 2/(self.N*(self.N-1))
+                r = np.corrcoef(self.agents[i].V, self.agents[j].V)
+                sim += r[0, 1]
+                con += abs(r[0, 1])
+        sim *= 2/(self.N*(self.N-1))
+        con *= 2/(self.N*(self.N-1))
 
-        self.rcd_preference_similarity.append(ans)
-
-
-    def record_preference_congruence(self):
-        # measure the preference_congruence
-        ans = 0
-        for i in range(self.N):
-            for j in range(i+1,self.N):
-                r = np.corrcoef(self.agents[i].V,self.agents[j].V)
-                ans += abs(r[0,1])
-        ans *= 2/(self.N*(self.N-1))
-
-        self.rcd_preference_congruence.append(ans)
+        self.rcd_preference_similarity.append(sim)
+        self.rcd_preference_congruence.append(con)
 
 
     def record_interpretative_distance(self):
-        # measure the interpretative_distance
+        """ Measure the interpretative_distance at the group level. """
         group_dis = 0
-        for agent_i in self.agents:     # calculate the group distance
-            for agent_j in self.agents: # from each agent pair
-                dis = 0
-                for k in range(self.K):
-                    for l in range(self.K): # distence between an agent pair's mattrix R
-                        dis += abs(
-                            agent_i.R[k][l] / (np.max(agent_i.R)+EPSILON)
-                            - agent_j.R[k][l] / (np.max(agent_i.R)+EPSILON)
-                        )
-                group_dis += dis/(self.K**2) # Sum the distance
-        group_dis /= (self.N**2) # interpretative distance at the group level
+        count = 0
+        for ag_i in self.agents:
+            for ag_j in self.agents:
+                if ag_i == ag_j:
+                    continue
+                count += 1
+                ag_i_norm_R = ag_i.R / np.max(ag_i.R) if np.max(ag_i.R) != 0 else ag_i.R
+                ag_j_norm_R = ag_j.R / np.max(ag_j.R) if np.max(ag_j.R) != 0 else ag_j.R
+                group_dis += np.mean(np.abs(ag_i_norm_R-ag_j_norm_R))
+        print(count, group_dis/count)
+        group_dis /= (self.N**2)
 
         self.rcd_interpretative_distance.append(group_dis)
     
 
     def record_mutual_information(self):
-        # measure the mutual information
-        I = 0
-        for x in range(self.K):
-            p_x = 0 # the variable for P(b1 = x)
-            for agent in self.agents:
-                p_x += agent.P[x]
-            p_x /= self.N
-            for y in range(self.K):
-                if y == x:  # P(b1 = x, b2 = x) = 0 given condition
-                    continue
-                p_y = 0 # the variable for P(b2 = y)
-                p_x_y = 0 # the variable for P(b1 = x, b2 = y)
-                for agent in self.agents:
-                    # enumerate X(b1) (using variable j) to get the marginal probability of y
-                    for j in range(self.K): 
-                        if j == y: continue
-                        p_y +=  agent.P[j] * agent.P[y] / (1-agent.P[j])
-                    p_x_y += agent.P[x]*agent.P[y] / (1-agent.P[x])
-                p_y /= self.N
-                p_x_y /= self.N
-                I += p_x_y*np.log(p_x_y/p_x/p_y)
+        """ Measure the mutual information. """
+        # Grace's implementation at the workshop.
+        # I = 0
+        # for x in range(self.K):
+        #     p_x = 0 # the variable for P(b1 = x)
+        #     for agent in self.agents:
+        #         p_x += agent.P[x]
+        #     p_x /= self.N
+
+        #     for y in range(self.K):
+        #         if y == x:  # P(b1 = x, b2 = x) = 0 given condition
+        #             continue
+        #         p_y = 0 # the variable for P(b2 = y)
+        #         p_x_y = 0 # the variable for P(b1 = x, b2 = y)
+        #         for agent in self.agents:
+        #             # enumerate X(b1) (using variable j) to get the marginal probability of y
+        #             for j in range(self.K): 
+        #                 if j == y: continue
+        #                 p_y +=  agent.P[j] * agent.P[y] / (1-agent.P[j])
+        #             p_x_y += agent.P[x]*agent.P[y] / (1-agent.P[x])
+        #         p_y /= self.N
+        #         p_x_y /= self.N
+        #         I += p_x_y*np.log(p_x_y/p_x/p_y)
+        
+        # Jun's implementation
+        # see Appendix: Measurement
+        p_ag_x_y = np.empty((self.N, self.K, self.K))
+        for ag_idx in range(self.N):
+            for x in range(self.K):
+                for y in range(self.K):
+                    p_ag = self.agents[ag_idx].P
+                    if x == y or p_ag[x] == 1.0:
+                        p_ag_x_y[ag_idx][x][y] = 0
+                    else:
+                        p_ag_x_y[ag_idx][x][y] = p_ag[x] * p_ag[y] / (1-p_ag[x])
+        
+        p_ag_y = np.sum(p_ag_x_y, axis=1)
+        p_y = np.mean(p_ag_y, axis=0)
+        p_x_y = np.mean(p_ag_x_y, axis=0)
+        p_x = np.mean(np.array([ag.P for ag in self.agents]), axis=0)
+
+        # method 1
+        # I = 0
+        # I_x_y = np.zeros((self.K, self.K))
+        # for x in range(self.K):
+        #     for y in range(self.K):
+        #         if x == y:
+        #             continue
+        #         tmp = p_x_y[x][y] * np.log(p_x_y[x][y]/(p_x[x]*p_y[y]))
+        #         I_x_y[x][y] = tmp
+        #         if np.isnan(tmp):
+        #             raise ValueError
+        #         I += tmp
+        
+        # method 2
+        p_y_2d, p_x_2d = np.meshgrid(p_y, p_x)
+        I_x_y = np.multiply(p_x_y, np.log2(np.divide(p_x_y, np.multiply(p_x_2d, p_y_2d)))) # /0 warning already handled
+        np.fill_diagonal(I_x_y, 0)
+        I = np.sum(I_x_y)
 
         self.rcd_mutual_information.append(I)
     
 
     def measure(self):
         ''' Call all the measurement. '''
-        self.record_preference_similarity()
-        self.record_preference_congruence()
+        self.record_preference_similarity_congruence()
         self.record_interpretative_distance()
         self.record_mutual_information()
 
 
     def run(self, log_verbose_n=10):
         ''' The main function for simulation. '''
+        print("params: K={}, N={}, decay_rate={}, times={}".format(self.K, self.N, self.decay_rate, self.times))
+        print("opt args: rnd_seed={}, log_measure_v={}, verbose={}, log_verbose_n={}".format(self.rnd_seed,
+            self.log_measure_v, self.verbose, log_verbose_n))
         log_idx, log_t_list = 0, [int(self.times*((i+1)/log_verbose_n)) for i in range(log_verbose_n)]
         for time in range(self.times):
             if log_t_list[log_idx] == time+1:
@@ -408,3 +451,8 @@ class TwoAgentsSimulate(Simulate):
         # correlation at the end
         final_corr = np.corrcoef(self.agents[0].V,self.agents[1].V)[0,1]
         return (final_corr,self.init_corr)
+
+
+if __name__ == "__main__":
+    demo = Simulate(decay_rate=0.95)
+    demo.record_interpretative_distance()
