@@ -1,3 +1,4 @@
+import argparse
 import multiprocessing
 import numpy as  np
 
@@ -22,6 +23,12 @@ def run_simulation(param_idx, decay_rate, log_data, rnd_seed):
     print("decay_rate = {:.2f} | trail {:3d} finished | pref cong = {:.4f}".format(decay_rate, rnd_seed-RNDSEED+1, log_data[param_idx][-1]))
 
 if __name__ == "__main__":
+    # parse args
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--N", type=int, default=100)
+    args = parser.parse_args()
+    N_AGENT = args.N
+
     # multi-processing
     manager = multiprocessing.Manager()
     log_data = [manager.list() for dr in np.arange(0.0, 1.0, 0.1)]
