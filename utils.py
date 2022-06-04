@@ -1,3 +1,4 @@
+from cgitb import small
 import numpy as  np
 import itertools
 
@@ -54,7 +55,7 @@ class Agent:
 
 
 class Simulate:
-    def __init__(self, K=6, N=30, decay_rate=0.8, times=100000,
+    def __init__(self, K=6, N=30, decay_rate=0.8, times=100000, small_world=False,
                  log_measure_v=1, verbose=True, rnd_seed=np.random.randint(10000)):
         np.random.seed(rnd_seed)
         self.rnd_seed = rnd_seed
@@ -68,6 +69,9 @@ class Simulate:
         
         # agents : agent list (init with N agent)
         self.agents = [ Agent(self.K) for _ in range(self.N) ]
+        self.small_world = small_world
+        if small_world:
+            self.network = self.build_network()
         
         # init lists for recording data
         self.rcd_preference_similarity = []
@@ -125,16 +129,11 @@ class Simulate:
     def record_interpretative_distance(self):
         """ Measure the interpretative_distance at the group level. """
         group_dis = 0
-        count = 0
         for ag_i in self.agents:
             for ag_j in self.agents:
-                if ag_i == ag_j:
-                    continue
-                count += 1
                 ag_i_norm_R = ag_i.R / np.max(ag_i.R) if np.max(ag_i.R) != 0 else ag_i.R
                 ag_j_norm_R = ag_j.R / np.max(ag_j.R) if np.max(ag_j.R) != 0 else ag_j.R
                 group_dis += np.mean(np.abs(ag_i_norm_R-ag_j_norm_R))
-        print(count, group_dis/count)
         group_dis /= (self.N**2)
 
         self.rcd_interpretative_distance.append(group_dis)
@@ -209,11 +208,44 @@ class Simulate:
         self.record_preference_similarity_congruence()
         self.record_interpretative_distance()
         self.record_mutual_information()
+    
+
+    def build_clique(self, vertices:np.ndarray) -> list:
+        edges = list()
+        for s in vertices:
+            for d in vertices:
+                if s == d:
+                    continue
+                edges.append({"s": s, "d": d})
+        return edges
+    
+    
+    def build_network(self) -> list:
+        edges = list()
+        clique_n = 5
+        clique_size = [self.N // clique_n + (1 if c_idx < (self.N % clique_n) else 0) for c_idx in range(clique_n)]
+        offset = 0
+        for c_idx in range(5):
+            edges += self.build_clique(np.arange(clique_size[c_idx])+offset)
+            offset += clique_size[c_idx]
+        assert offset == self.N
+
+        # swapping 10% of the edges to make bridges between cliques
+        for _ in range(len(edges)//10):
+            e1, e2 = np.random.choice(edges, size=2, replace=False)
+            e1["d"], e2["d"] = e2["d"], e1["d"]
+        
+        # build graph
+        graph = [[] for _ in range(self.N)]
+        for e in edges:
+            graph[e["s"]].append(e["d"])
+
+        return graph
 
 
     def run(self, log_verbose_n=10):
         ''' The main function for simulation. '''
-        print("params: K={}, N={}, decay_rate={}, times={}".format(self.K, self.N, self.decay_rate, self.times))
+        print("params: K={}, N={}, decay_rate={}, times={}, small_world={}".format(self.K, self.N, self.decay_rate, self.times, self.small_world))
         print("opt args: rnd_seed={}, log_measure_v={}, verbose={}, log_verbose_n={}".format(self.rnd_seed,
             self.log_measure_v, self.verbose, log_verbose_n))
         log_idx, log_t_list = 0, [int(self.times*((i+1)/log_verbose_n)) for i in range(log_verbose_n)]
@@ -225,7 +257,12 @@ class Simulate:
                 log_idx += 1
 
             # chose two different agent
-            agent_A, agent_B = np.random.choice(self.agents, size=2, replace=False)
+            if self.small_world:
+                agent_B_idx = np.random.choice(self.N)
+                agent_A_idx = np.random.choice(self.network[agent_B_idx])
+                agent_A, agent_B = self.agents[agent_A_idx], self.agents[agent_B_idx]
+            else:
+                agent_A, agent_B = np.random.choice(self.agents, size=2, replace=False)
 
             # act and observe
             b1, b2 = np.random.choice(self.K, size=2, replace=False, p=agent_A.P)
@@ -454,5 +491,6 @@ class TwoAgentsSimulate(Simulate):
 
 
 if __name__ == "__main__":
-    demo = Simulate(decay_rate=0.95)
-    demo.record_interpretative_distance()
+    demo = Simulate(N=100, times=1000000, decay_rate=0.8, small_world=True, log_measure_v=1000)
+    demo.run(log_verbose_n=1000)
+    # demo.record_interpretative_distance()
