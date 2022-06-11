@@ -57,8 +57,8 @@ if __name__ == "__main__":
                           "rndseed_{}".format(RNDSEED)])
     plot_handler = PlotErrorBarHandler(xlabel="Decay Rate",
                                        ylabel="Preference Congruence",
-                                       title="N={}, {}".format(N_AGENT, "Fully-Connect" if SMALL_WORLD else "Small-World"),
-                                       fn="errorbar_{}".format("fully-connected" if SMALL_WORLD else "small-world"),
+                                       title="N={}, {}".format(N_AGENT, "Fully-Connect" if not SMALL_WORLD else "Small-World"),
+                                       fn="errorbar_{}".format("fully-connected" if not SMALL_WORLD else "small-world"),
                                        x_lim=[-0.05, 0.95], y_lim=[-0.05, 1.05], use_ylim=True,
                                        x_tick=[0.0, 0.9, 0.1], y_tick=[0.0, 1.00, 0.25],
                                        figure_size=8, figure_ratio=267/341)
