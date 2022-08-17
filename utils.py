@@ -206,14 +206,14 @@ class Simulate:
     def measure(self):
         ''' Call all the measurement. '''
         self.record_preference_similarity_congruence()
-        self.record_interpretative_distance()
-        self.record_mutual_information()
+        # self.record_interpretative_distance()
+        # self.record_mutual_information()
     
 
     def build_clique(self, vertices:np.ndarray) -> list:
         edges = list()
         for s in vertices:
-            for d in vertices:
+            for d in vertices: 
                 if s == d:
                     continue
                 edges.append({"s": s, "d": d})
@@ -251,6 +251,7 @@ class Simulate:
         log_idx, log_t_list = 0, [int(self.times*((i+1)/log_verbose_n)) for i in range(log_verbose_n)]
         for time in range(self.times):
             if log_t_list[log_idx] == time+1:
+                self.measure()
                 if self.verbose and self.rcd_preference_congruence:
                     print("t: {:6d}/{:6d} ({:.1f}%) | pref cong: {:.4f}".format(time+1, self.times,
                         100*(time+1)/self.times, self.rcd_preference_congruence[-1]))
@@ -295,7 +296,7 @@ class Simulate:
 
             # record the point for plot img
             if (time+1) % self.log_measure_v == 0:
-                self.measure()     
+                self.measure()
             
             # # draw and output the plot map at this time
             # if time % 1000 == 0:
@@ -422,26 +423,49 @@ class TwoAgentsSimulate(Simulate):
     
 
     def MI(self):
-        # calculate mutual information
-        I = 0   # mutual information
-        for x in range(self.K):
-            p_x = 0 # P(b1 = x)
-            for agent in self.agents:
-                p_x += agent.P[x]
-            p_x /= self.N
-            for y in range(self.K):
-                if y == x:  # P(b1 = x, b2 = x) = 0 given condition
-                    continue
-                p_y = 0 # P(b2 = y)
-                p_x_y = 0 # P(b1 = x, b2 = y)
-                for agent in self.agents:
-                    for j in range(self.K):  # enumerate X(b1) (using variable j) to get the marginal probability of y
-                        if j == y: continue
-                        p_y +=  agent.P[j] * agent.P[y]/( 1 - agent.P[j])
-                    p_x_y += agent.P[x]*agent.P[y]/(1-agent.P[x])
-                p_y /= self.N
-                p_x_y /= self.N
-                I += p_x_y*np.log2(p_x_y/p_x/p_y)
+        # # calculate mutual information
+        # I = 0   # mutual information
+        # for x in range(self.K):
+        #     p_x = 0 # P(b1 = x)
+        #     for agent in self.agents:
+        #         p_x += agent.P[x]
+        #     p_x /= self.N
+        #     for y in range(self.K):
+        #         if y == x:  # P(b1 = x, b2 = x) = 0 given condition
+        #             continue
+        #         p_y = 0 # P(b2 = y)
+        #         p_x_y = 0 # P(b1 = x, b2 = y)
+        #         for agent in self.agents:
+        #             for j in range(self.K):  # enumerate X(b1) (using variable j) to get the marginal probability of y
+        #                 if j == y: continue
+        #                 p_y +=  agent.P[j] * agent.P[y]/( 1 - agent.P[j])
+        #             p_x_y += agent.P[x]*agent.P[y]/(1-agent.P[x])
+        #         p_y /= self.N
+        #         p_x_y /= self.N
+        #         I += p_x_y*np.log2(p_x_y/p_x/p_y)
+
+        # Jun's implementation
+        # see Appendix: Measurement
+        p_ag_x_y = np.empty((self.N, self.K, self.K))
+        for ag_idx in range(self.N):
+            for x in range(self.K):
+                for y in range(self.K):
+                    p_ag = self.agents[ag_idx].P
+                    if x == y or p_ag[x] == 1.0:
+                        p_ag_x_y[ag_idx][x][y] = 0
+                    else:
+                        p_ag_x_y[ag_idx][x][y] = p_ag[x] * p_ag[y] / (1-p_ag[x])
+        
+        p_ag_y = np.sum(p_ag_x_y, axis=1)
+        p_y = np.mean(p_ag_y, axis=0)
+        p_x_y = np.mean(p_ag_x_y, axis=0)
+        p_x = np.mean(np.array([ag.P for ag in self.agents]), axis=0)
+        
+        p_y_2d, p_x_2d = np.meshgrid(p_y, p_x)
+        I_x_y = np.multiply(p_x_y, np.log2(np.divide(p_x_y, np.multiply(p_x_2d, p_y_2d)))) # /0 warning already handled
+        np.fill_diagonal(I_x_y, 0)
+        I = np.sum(I_x_y)
+
         return I
     
 
@@ -491,6 +515,6 @@ class TwoAgentsSimulate(Simulate):
 
 
 if __name__ == "__main__":
-    demo = Simulate(N=100, times=1000000, decay_rate=0.8, small_world=True, log_measure_v=1000)
+    demo = Simulate(N=100, times=1000000, decay_rate=1.0, small_world=False, log_measure_v=1000000000)
     demo.run(log_verbose_n=1000)
     # demo.record_interpretative_distance()

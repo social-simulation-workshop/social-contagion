@@ -17,9 +17,9 @@ if __name__ == "__main__":
     plot_MI = [np.zeros(N_TIMES), np.zeros(N_TIMES)]
 
     plot_finalCorr_to_initCorr = [[],[]]
-    for time in range(N_TRIALS):
+    for trail_idx in range(N_TRIALS):
         # simulate for N_TRIALS times
-        print(time)
+        print("trail {}".format(trail_idx))
         demo = TwoAgentsSimulate(times=N_TIMES)
         final_corr, init_corr =  demo.run()
 
